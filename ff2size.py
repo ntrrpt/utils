@@ -2,7 +2,7 @@
 
 # /// script
 # dependencies = [
-#   "ffmpeg",
+#   "ffmpeg-python",
 #   "ffpb",
 #   "tqdm",
 # ]
