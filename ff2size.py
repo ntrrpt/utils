@@ -33,7 +33,7 @@ def conv(filename):
     print(f"duration = {duration}, audio_bitrate = {audio_bitrate}")
     
     target_audio_bitrate = audio_bitrate # TODO: Adjust target audio bitrate. Use source bitrate for now
-    target_video_bitrate = options.target_video_size_MB * 8192 / (1.048576 * duration) - target_audio_bitrate
+    target_video_bitrate = int(options.target_video_size_MB) * 8192 / (1.048576 * duration) - target_audio_bitrate
     print(f"target_audio_bitrate = {target_audio_bitrate}, target_video_bitrate = {target_video_bitrate}")
 
     first_cmd  = f'-y -i \"{filename}\" -c:v h264_nvenc -b:v {target_video_bitrate}k -pass 1 -an -f mp4 nul'
