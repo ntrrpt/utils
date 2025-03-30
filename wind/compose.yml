@@ -1,0 +1,24 @@
+services:
+  windows:
+    image: dockurr/windows
+    container_name: windows
+    environment:
+       DISK_SIZE: "16G"
+    devices:
+      - /dev/kvm
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 8006:8006
+      - 9999:3923
+      - 5900:5900
+      - 3389:3389/tcp
+      - 3389:3389/udp
+    volumes:
+      - ./storage:/storage
+      - ./ltsc.iso:/custom.iso
+      - ./oem:/oem
+      - ./data:/data
+    restart: always
+    stop_grace_period: 2m
