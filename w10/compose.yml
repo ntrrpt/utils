@@ -4,6 +4,7 @@ services:
     container_name: windows
     environment:
        DISK_SIZE: "16G"
+       VERSION: "10l"
     devices:
       - /dev/kvm
       - /dev/net/tun
@@ -17,8 +18,8 @@ services:
       - 3389:3389/udp
     volumes:
       - ./storage:/storage
-      - ./ltsc.iso:/custom.iso
       - ./oem:/oem
-      - ./data:/data
+#      - ./ltsc.iso:/custom.iso
+#      - ./data:/data
     restart: always
     stop_grace_period: 2m
