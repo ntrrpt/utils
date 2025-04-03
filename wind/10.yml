@@ -1,7 +1,7 @@
 services:
-  windows:
+  win10:
     image: dockurr/windows
-    container_name: windows
+    container_name: win10
     environment:
        DISK_SIZE: "16G"
        VERSION: "10l"
@@ -17,9 +17,9 @@ services:
       - 3389:3389/tcp
       - 3389:3389/udp
     volumes:
-      - ./storage:/storage
-      - ./oem:/oem
+      - ./str_10:/storage
+      - ./oem_10:/oem
 #      - ./ltsc.iso:/custom.iso
-#      - ./data:/data
+#      - ./data_10:/data
     restart: always
     stop_grace_period: 2m
