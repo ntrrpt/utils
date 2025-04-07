@@ -12,7 +12,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 C:\Users\Docker\.local\bin\uv.exe tool update-shell
 C:\Users\Docker\.local\bin\uv.exe tool install copyparty --with "pyftpdlib,pillow,pyvips,mutagen"
 C:\OEM\nssm.exe install cpp "C:\Users\Docker\.local\bin\copyparty.exe" -p3923 -v /c/:/:A
-C:\OEM\nssm.exe set cpp ObjectName .\Docker ""
+C:\OEM\nssm.exe set cpp ObjectName .\Docker admin
 C:\OEM\nssm.exe start cpp
 
 pause
