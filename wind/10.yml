@@ -3,7 +3,7 @@ services:
     image: dockurr/windows
     container_name: win10
     environment:
-       DISK_SIZE: "16G"
+       DISK_SIZE: "64G"
        VERSION: "10l"
     devices:
       - /dev/kvm
