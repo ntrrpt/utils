@@ -6,11 +6,17 @@ echo rip fileindexer
 sc config "WSearch" start= disabled
 net stop "WSearch"
 
+echo rip edge
+powershell -c "Get-ChildItem "${Env:ProgramFiles(x86)}\Microsoft\Edge\Application" -Directory | % { $s = Join-Path $_.FullName "Installer\setup.exe"; if (Test-Path $s) { & $s --uninstall --force-uninstall --system-level } }"
+
 echo activation
 powershell -c "& ([ScriptBlock]::Create((irm https://get.activated.win))) /Z-Windows ; taskkill /f /im explorer.exe ; Start-Sleep -Seconds 2 ; start explorer"
 
 echo chocolatey + some software
-powershell -c "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')) ; C:\ProgramData\chocolatey\choco.exe feature enable -n allowGlobalConfirmation ; C:\ProgramData\chocolatey\choco.exe install 7zip aria2 wget gsudo everything systeminformer-nightlybuilds"
+powershell -c "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
+powershell -c "C:\ProgramData\chocolatey\choco.exe feature enable -n allowGlobalConfirmation"
+powershell -c "C:\ProgramData\chocolatey\choco.exe install 7zip aria2 wget gsudo far everything systeminformer-nightlybuilds"
+powershell -c "C:\ProgramData\chocolatey\choco.exe install thorium --params '"/SSE3"'"
 
 echo uv + copyparty autorun
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
@@ -22,3 +28,4 @@ C:\OEM\nssm.exe start cpp
 
 pause
 exit
+
