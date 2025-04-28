@@ -7,7 +7,8 @@ sc config "WSearch" start= disabled
 net stop "WSearch"
 
 echo rip edge
-powershell -c "Get-ChildItem "${Env:ProgramFiles(x86)}\Microsoft\Edge\Application" -Directory | % { $s = Join-Path $_.FullName "Installer\setup.exe"; if (Test-Path $s) { & $s --uninstall --force-uninstall --system-level } }"
+set EdgePath=%ProgramFiles(x86)%\Microsoft\Edge\Application
+powershell -Command "foreach ($d in Get-ChildItem -Path '%EdgePath%' -Directory) { $s = Join-Path $d.FullName 'Installer\setup.exe'; if (Test-Path $s) { & $s --uninstall --force-uninstall --system-level } }"
 
 echo activation
 powershell -c "& ([ScriptBlock]::Create((irm https://get.activated.win))) /Z-Windows ; taskkill /f /im explorer.exe ; Start-Sleep -Seconds 2 ; start explorer"
