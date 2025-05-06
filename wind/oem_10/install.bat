@@ -16,7 +16,7 @@ powershell -c "& ([ScriptBlock]::Create((irm https://get.activated.win))) /Z-Win
 echo chocolatey + some software
 powershell -c "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))"
 powershell -c "C:\ProgramData\chocolatey\choco.exe feature enable -n allowGlobalConfirmation"
-powershell -c "C:\ProgramData\chocolatey\choco.exe install 7zip aria2 wget gsudo far everything systeminformer-nightlybuilds"
+powershell -c "C:\ProgramData\chocolatey\choco.exe install 7zip aria2 wget gsudo far everything systeminformer-nightlybuilds conemu notepadplusplus"
 powershell -c "C:\ProgramData\chocolatey\choco.exe install thorium --params '"/SSE3"'"
 
 echo uv + copyparty autorun
