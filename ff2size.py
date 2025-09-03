@@ -8,44 +8,93 @@
 # ]
 # ///
 
-import ffmpeg, ffpb, tqdm
-
-import optparse, sys, shlex, os
+import ffmpeg
+import ffpb
+import tqdm
+import argparse
+import sys
+import shlex
+import os
 from functools import partial
 from subprocess import Popen, PIPE
 
-parser = optparse.OptionParser()
-parser.add_option('-s', '--size', dest='target_video_size_MB', default=4000, help='target_video_size in MB')
-parser.add_option('-e', '--ext', dest='files_ext', default='', help='convert all files with this ext (mp4 4ex)')
-options, arguments = parser.parse_args()
+parser = argparse.ArgumentParser(
+    description="compressing video to a specified size via ffmpeg (NVENC)."
+)
+
+parser.add_argument(
+    "-s",
+    "--size",
+    dest="target_video_size_MB",
+    type=int,
+    default=4000,
+    help="target video size in MB (default: 4000).",
+)
+
+parser.add_argument(
+    "-e",
+    "--ext",
+    dest="files_ext",
+    default="",
+    help="file extensions for conversion (e.g., mp4). If specified, all files with this extension in the current directory will be converted.",
+)
+
+parser.add_argument(
+    "files",
+    nargs="*",
+    help="file names for conversion (if --ext is not specified).",
+)
+
+args = parser.parse_args()
+
 
 def probe(file_path):
-    probe = ffmpeg.probe(file_path)
-    audio_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'audio'), None)
-    audio_bitrate = float(audio_stream['bit_rate'] if audio_stream and 'bit_rate' in audio_stream else None) / 1000
-    duration = float(probe['format']['duration'])
-    return duration, audio_bitrate 
+    probe_data = ffmpeg.probe(file_path)
+    audio_stream = next(
+        (stream for stream in probe_data["streams"] if stream["codec_type"] == "audio"),
+        None,
+    )
+    audio_bitrate = (
+        float(audio_stream["bit_rate"]) / 1000
+        if audio_stream and "bit_rate" in audio_stream
+        else None
+    )
+    duration = float(probe_data["format"]["duration"])
+    return duration, audio_bitrate
+
 
 def conv(filename):
     print(filename)
     name, extension = os.path.splitext(filename)
     duration, audio_bitrate = probe(filename)
     print(f"duration = {duration}, audio_bitrate = {audio_bitrate}")
-    
-    target_audio_bitrate = audio_bitrate # TODO: Adjust target audio bitrate. Use source bitrate for now
-    target_video_bitrate = int(options.target_video_size_MB) * 8192 / (1.048576 * duration) - target_audio_bitrate
-    print(f"target_audio_bitrate = {target_audio_bitrate}, target_video_bitrate = {target_video_bitrate}")
 
-    first_cmd  = f'-y -i \"{filename}\" -c:v h264_nvenc -b:v {target_video_bitrate}k -pass 1 -an -f mp4 nul'
-    second_cmd = f'-y -i \"{filename}\" -c:v h264_nvenc -b:v {target_video_bitrate}k -pass 2 -c:a aac -b:a {target_audio_bitrate}k \"{name} {options.target_video_size_MB}MB{extension}\"'
+    target_audio_bitrate = (
+        audio_bitrate  # TODO: adjust target audio bitrate. use source bitrate for now
+    )
+    target_video_bitrate = (
+        args.target_video_size_MB * 8192 / (1.048576 * duration) - target_audio_bitrate
+    )
+    print(
+        f"target_audio_bitrate = {target_audio_bitrate}, target_video_bitrate = {target_video_bitrate}"
+    )
+
+    first_cmd = f'-y -i "{filename}" -c:v h264_nvenc -b:v {target_video_bitrate}k -pass 1 -an -f mp4 nul'
+    second_cmd = f'-y -i "{filename}" -c:v h264_nvenc -b:v {target_video_bitrate}k -pass 2 -c:a aac -b:a {target_audio_bitrate}k "{name} {args.target_video_size_MB}MB{extension}"'
     ffpb.main(argv=shlex.split(first_cmd))
     ffpb.main(argv=shlex.split(second_cmd))
     print()
-	
-print(f"target_video_size_MB => {options.target_video_size_MB}")
 
-if options.files_ext:
-    arguments = [f for f in os.listdir('.') if f.endswith(options.files_ext)]
 
-for arg in arguments:
-	conv(arg)
+print(f"target_video_size_MB => {args.target_video_size_MB}")
+
+files_to_convert = args.files
+if args.files_ext:
+    files_to_convert = [f for f in os.listdir(".") if f.endswith(args.files_ext)]
+
+if not files_to_convert:
+    print("no files to process. Specify files or the --ext parameter.")
+    sys.exit(1)
+
+for file in files_to_convert:
+    conv(file)
