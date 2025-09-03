@@ -10,13 +10,10 @@
 
 import ffmpeg
 import ffpb
-import tqdm
 import argparse
 import sys
 import shlex
 import os
-from functools import partial
-from subprocess import Popen, PIPE
 
 parser = argparse.ArgumentParser(
     description="compressing video to a specified size via ffmpeg (NVENC)."
