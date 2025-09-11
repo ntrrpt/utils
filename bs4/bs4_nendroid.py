@@ -2,143 +2,157 @@
 
 # /// script
 # dependencies = [
-#   "requests",
-#   "bs4",
-#   "loguru",
+#   "requests",
+#   "bs4",
+#   "loguru",
+#   "pysocks"
 # ]
 # ///
 
-
-import requests
-import time
-import subprocess
-import sys
-import re
-import random
-import string
-import pathlib
 from bs4 import BeautifulSoup
 from loguru import logger as log
+import requests
 
-trace, info, err, succ = (log.trace, log.info, log.error, log.success)
-delay = time.sleep
+from urllib.parse import urlparse
+from pathlib import Path
+from email.utils import parsedate_to_datetime
+import time
+import sys
+import re
+import os
 
-ARIA2_FILENAME = (
-    "".join(random.choice(string.ascii_letters) for x in range(10)) + ".txt"
-)
+# need "proxies"
+proxy = {}
 
-links = [
-    "http://nendoroid01.web.fc2.com/2008-03/",
-    "http://nendoroid01.web.fc2.com/2008-04/",
-    "http://nendoroid02.web.fc2.com/2008-05/",
-    "http://nendoroid02.web.fc2.com/2008-06/",
-    "http://nendoroid03.web.fc2.com/2008-07/",
-    "http://nendoroid03.web.fc2.com/2008-08/",
-    "http://nendoroid03.web.fc2.com/2008-09/",
-    "http://nendoroid04.web.fc2.com/2008-10/",
-    "http://nendoroid04.web.fc2.com/2008-11/",
-    "http://nendoroid05.web.fc2.com/2008-12/",
-    "http://nendoroid05.web.fc2.com/2009-01/",
-    "http://nendoroid06.web.fc2.com/2009-02/",
-    "http://nendoroid06.web.fc2.com/2009-03/",
-    "http://nendoroid07.web.fc2.com/2009-04/",
-    "http://nendoroid07.web.fc2.com/2009-05/",
-    "http://nendoroid08.web.fc2.com/2009-06/",
-    "http://nendoroid08.web.fc2.com/2009-07/",
-    "http://nendoroid09.web.fc2.com/2009-08/",
-    "http://nendoroid09.web.fc2.com/2009-09/",
+# and real-lookin headers
+header = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0"
+}
+
+not_exists = ("1223753394222")  # fmt: skip
+
+nend_urls = [
+    "http://nendoroid01.web.fc2.com/2008-03/",
+    "http://nendoroid01.web.fc2.com/2008-04/",
+    "http://nendoroid02.web.fc2.com/2008-05/",
+    "http://nendoroid02.web.fc2.com/2008-06/",
+    "http://nendoroid03.web.fc2.com/2008-07/",
+    "http://nendoroid03.web.fc2.com/2008-08/",
+    "http://nendoroid03.web.fc2.com/2008-09/",
+    "http://nendoroid04.web.fc2.com/2008-10/",
+    "http://nendoroid04.web.fc2.com/2008-11/",
+    "http://nendoroid05.web.fc2.com/2008-12/",
+    "http://nendoroid05.web.fc2.com/2009-01/",
+    "http://nendoroid06.web.fc2.com/2009-02/",
+    "http://nendoroid06.web.fc2.com/2009-03/",
+    "http://nendoroid07.web.fc2.com/2009-04/",
+    "http://nendoroid07.web.fc2.com/2009-05/",
+    "http://nendoroid08.web.fc2.com/2009-06/",
+    "http://nendoroid08.web.fc2.com/2009-07/",
+    "http://nendoroid09.web.fc2.com/2009-08/",
+    "http://nendoroid09.web.fc2.com/2009-09/",
 ]
 
-log.remove(0)
-log.add(
-    sys.stderr,
-    format="<level>[{time:DD-MMM-YYYY HH:mm:ss}]</level> {message}",
-    backtrace=True,
-    diagnose=True,
-    colorize=True,
-    level=5,
-)
-log.add(
-    "log.txt",
-    format="[{time:DD-MMM-YYYY HH:mm:ss}] {message}",
-    backtrace=True,
-    diagnose=True,
-    colorize=True,
-    level=5,
-)
-
-
-def fileDel(filename):
-    rem_file = pathlib.Path(filename)
-    rem_file.unlink(missing_ok=True)
-
-
-def add(dir, bin):
-    with open(dir, "a", encoding="utf-8") as file:
-        file.write(bin + "\n")
+def get_with_retries(url, max_retries=5, retry_delay=10):
+    for attempt in range(max_retries):
+        try:
+            r = requests.get(url, proxies=proxy, headers=header, timeout=15)
+            r.raise_for_status()
+            return r
+        except requests.exceptions.HTTPError as e:
+            raise Exception("http failed:", e, "| status:", r.status_code)
+        except requests.exceptions.RequestException as e:
+            log.error(str(e))
+            time.sleep(retry_delay)
+    raise Exception(f"failed {url} after {max_retries} tries")
 
 
 def find_max_page(url):
-    soup = BeautifulSoup(requests.get(url).text, "html.parser")
+    text = requests.get(url, proxies=proxy, headers=header).text
+    soup = BeautifulSoup(text, "html.parser")
 
-    all = soup.find_all("tr")
-    for i in all:
-        if "Page" not in str(i):
-            continue
+    for i in soup.find_all("tr"):
+        if "Page" in str(i):
 
-        all_num = i.find_all("a")
-        match = re.search(r"index(\d+)\.html", all_num[-1].get("href"))
+            all_num = i.find_all("a")
+            match = re.search(r"index(\d+)\.html", all_num[-1].get("href"))
 
-        return int(match.group(1))
+            return int(match.group(1))
 
+if __name__ == '__main__':
+    log.add("log.txt", encoding="utf-8")
 
-for link in links:
-    trace(link)
-    img_urls = []
+    for url in nend_urls:
+        images = []
 
-    url = link + "index.html"
-    pages = [url]
+        # http://nendoroid01.web.fc2.com/2008-03/ => 2008-03
+        dir_name = Path(url.rstrip("/").split("/")[-1])
+        dir_name.mkdir(parents=True, exist_ok=True)
 
-    max_page = find_max_page(url)
-    trace("pages => %s" % max_page)
+        pages = [url + "index.html"]
+        max_page = find_max_page(pages[0])
+        log.info(f"{url}: pages => {max_page}")
 
-    for i in range(2, max_page + 1):
-        pages.append(link + "index%s.html" % i)
+        for i in range(2, max_page + 1):
+            pages.append(f"{url}index{i}.html")
 
-    for page in pages:
-        info(page)
-        delay(2)
-        soup = BeautifulSoup(requests.get(page).text, "html.parser")
-        images = soup.find_all("img", class_="image")
+        for page in pages:
+            log.info(page)
 
-        img_urls.append(page)
-        for i in images:
-            img_urls.append(link + i.get("alt") + ".jpg")
+            parsed_url = urlparse(page)
+            file_name = os.path.basename(parsed_url.path)
+            file_path = dir_name / file_name
 
-    # http://nendoroid01.web.fc2.com/2008-03/ => 2008-03
-    dir_name = link.rstrip("/").split("/")[-1]
+            r = get_with_retries(page)
+            with open(file_path, "wb") as f:
+                f.write(r.content)
 
-    aria2c_args = [
-        "aria2c",
-        f"--input-file={ARIA2_FILENAME}",
-        f"--dir={dir_name}",
-        "--max-connection-per-server=1",
-        "--max-concurrent-downloads=2",
-        "--auto-file-renaming=false",
-        "--remote-time=true",
-        "--log-level=error",
-        "--console-log-level=error",
-        "--download-result=hide",
-        "--summary-interval=0",
-        "--file-allocation=none",
-        "--continue=true",
-        #'--all-proxy=http://127.0.0.1:10809'
-    ]
+            soup = BeautifulSoup(r.text, "html.parser")
+            blocks = soup.find_all("td")
 
-    fileDel(ARIA2_FILENAME)
-    for img in img_urls:
-        add(ARIA2_FILENAME, img)
+            for block in blocks:
+                link = block.find("a")
+                img = block.find("img")
 
-    subprocess.run(aria2c_args)
-    print("", end="\n", flush=True)
-    fileDel(ARIA2_FILENAME)
+                if link and img:
+                    src = img.get("src")
+                    alt = img.get("alt")
+
+                    if src.startswith("thumbs"):
+                        u = url + str(alt)
+                        if u not in images:
+                            images.append(u)
+
+        for img in images:
+            for ext in ["jpg", "gif", "png", "rip"]:
+                if ext == "rip":
+                    log.critical("EXT NOT FOUND")
+                    log.error(img)
+                    sys.exit(1)
+
+                try:
+                    img_url = f"{img}.{ext}"
+                    parsed_url = urlparse(img_url)
+                    file_name = os.path.basename(parsed_url.path)
+                    file_path = dir_name / file_name
+
+                    if file_path.is_file() or img.endswith(not_exists):
+                        log.info(img_url)
+                        break
+
+                    r = get_with_retries(img_url)
+                    with open(file_path, "wb") as f:
+                        f.write(r.content)
+
+                    if "Last-Modified" in r.headers:
+                        lm = r.headers["Last-Modified"]
+                        dt = parsedate_to_datetime(lm)
+                        ts = dt.timestamp()
+                        os.utime(file_path, (ts, ts))
+
+                    log.success(img_url)
+                    break
+
+                except Exception:
+                    log.error(img_url)
+
